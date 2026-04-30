@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    body { width: 360px; font-family: sans-serif; padding: 12px; }
+    #status { font-size: 12px; color: #888; margin-bottom: 8px; }
+    #chat { height: 280px; overflow-y: auto; border: 1px solid #ddd;
+            border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+    .msg { margin: 6px 0; line-height: 1.5; font-size: 13px; }
+    .user { color: #1a73e8; font-weight: bold; }
+    .bot  { color: #333; }
+    #row  { display: flex; gap: 6px; }
+    #q    { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; }
+    #send { padding: 8px 14px; background: #1a73e8; color: #fff;
+            border: none; border-radius: 6px; cursor: pointer; }
+    #key-section { margin-top: 10px; font-size: 12px; }
+    #key-input { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
+    #save-key { margin-top: 4px; font-size: 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="status">Loading transcript...</div>
+  <div id="chat"></div>
+  <div id="row">
+    <input id="q" type="text" placeholder="Ask about this video..." />
+    <button id="send">Send</button>
+  </div>
+  <div id="key-section">
+    <label>OpenAI API Key</label>
+    <input id="key-input" type="password" placeholder="sk-..." />
+    <button id="save-key">Save key</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

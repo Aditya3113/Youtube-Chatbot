@@ -19,6 +19,12 @@ async function handleLoadVideo(videoId) {
 
   const transcript = await fetchTranscript(videoId);
   console.log("Transcript length:", transcript.length);
+  console.log("Preview:", transcript.slice(0, 300));
+
+  if (!transcript.length) {
+    console.error("Transcript is empty");
+    return;
+  }
 
   const chunks = chunkText(transcript, 1000, 200);
   console.log("Chunks:", chunks.length);
@@ -31,6 +37,9 @@ async function handleLoadVideo(videoId) {
 }
 
 async function handleAsk(question) {
+  if (vectorIndex.length === 0) {
+    return "Transcript not loaded yet. Please wait or try a different video.";
+  }
   const qVec = await embed(question);
   const topChunks = topK(qVec, vectorIndex, 4);
   const context = topChunks.map(c => c.text).join("\n\n");
@@ -38,14 +47,62 @@ async function handleAsk(question) {
 }
 
 async function fetchTranscript(videoId) {
-  const res = await fetch(
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`
-  );
-  const data = await res.json();
-  return data.events
-    ?.filter(e => e.segs)
-    .flatMap(e => e.segs.map(s => s.utf8))
-    .join(" ") || "";
+  try {
+    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9"
+      }
+    });
+    const html = await pageRes.text();
+
+    const captionMatch = html.match(/"baseUrl":"(https:\/\/www\.youtube\.com\/api\/timedtext[^"]+)"/);
+    if (!captionMatch) {
+      console.warn("No captions found for this video");
+      return "";
+    }
+
+    const captionUrl = captionMatch[1]
+      .replace(/\\u0026/g, "&")
+      .replace(/\\/g, "");
+
+    console.log("Caption URL:", captionUrl.slice(0, 120));
+
+    const capRes = await fetch(captionUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.youtube.com/"
+      }
+    });
+
+    console.log("Caption response status:", capRes.status);
+    const xml = await capRes.text();
+    console.log("XML length:", xml.length);
+    console.log("XML preview:", xml.slice(0, 150));
+
+    const texts = [];
+    const regex = /<text[^>]*>([\s\S]*?)<\/text>/g;
+    let match;
+    while ((match = regex.exec(xml)) !== null) {
+      const text = match[1]
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/\n/g, " ")
+        .trim();
+      if (text) texts.push(text);
+    }
+
+    console.log("Lines extracted:", texts.length);
+    return texts.join(" ").replace(/\s+/g, " ").trim();
+
+  } catch (e) {
+    console.error("fetchTranscript error:", e);
+    return "";
+  }
 }
 
 function chunkText(text, chunkSize, overlap) {

@@ -39,4 +39,13 @@ Youtube-Chatbot/
 │── templates/
 │── static/
 
+git clone https://github.com/Aditya3113/Youtube-Chatbot.git
+cd Youtube-Chatbot
 
+python -m venv venv
+
+venv\Scripts\activate
+
+source venv/bin/activate
+
+pip install -r requirements.txt
